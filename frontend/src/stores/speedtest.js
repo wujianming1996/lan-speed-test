@@ -26,7 +26,8 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
       const startTime = performance.now()
       const collected = []
       let totalBytes = 0
-      let lastSample = startTime
+      let lastBytes = 0
+      let lastTime = performance.now()
 
       while (true) {
         const { done, value } = await reader.read()
@@ -34,18 +35,21 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
 
         totalBytes += value.length
         const now = performance.now()
+        const delta = (now - lastTime) / 1000
 
-        if (now - lastSample >= 200) {
+        if (delta >= 0.2) {
+          const deltaBytes = totalBytes - lastBytes
+          const speedBps = deltaBytes * 8 / delta
           const elapsed = (now - startTime) / 1000
-          const avgBps = totalBytes * 8 / elapsed
           collected.push({
             time: Math.round(elapsed * 100) / 100,
-            bits_per_second: Math.round(avgBps),
+            bits_per_second: Math.round(speedBps),
             bytes: totalBytes
           })
           intervals.value = [...collected]
-          currentSpeed.value = avgBps
-          lastSample = now
+          currentSpeed.value = speedBps
+          lastBytes = totalBytes
+          lastTime = now
         }
       }
 
@@ -92,21 +96,26 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
       xhr.open('POST', '/api/speedtest/upload')
 
       const result = await new Promise((resolve, reject) => {
-        let lastSample = startTime
+        let lastSample = performance.now()
+        let lastLoaded = 0
 
         xhr.upload.onprogress = (e) => {
           const now = performance.now()
-          if (now - lastSample >= 200) {
+          const delta = (now - lastSample) / 1000
+
+          if (delta >= 0.2) {
+            const deltaLoaded = e.loaded - lastLoaded
+            const speedBps = deltaLoaded * 8 / delta
             const elapsed = (now - startTime) / 1000
-            const avgBps = e.loaded * 8 / elapsed
             collected.push({
               time: Math.round(elapsed * 100) / 100,
-              bits_per_second: Math.round(avgBps),
+              bits_per_second: Math.round(speedBps),
               bytes: e.loaded
             })
             intervals.value = [...collected]
-            currentSpeed.value = avgBps
+            currentSpeed.value = speedBps
             lastSample = now
+            lastLoaded = e.loaded
           }
         }
 
@@ -115,15 +124,19 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
           reject(new DOMException('Aborted', 'AbortError'))
         })
         xhr.onload = () => {
-          if (xhr.status === 200) resolve(JSON.parse(xhr.responseText))
-          else reject(new Error(`Upload failed: ${xhr.status}`))
+          if (xhr.status === 200) {
+            try { resolve(JSON.parse(xhr.responseText)) }
+            catch { reject(new Error('Invalid response')) }
+          } else {
+            reject(new Error(`Upload failed: ${xhr.status}`))
+          }
         }
         xhr.onerror = () => reject(new Error('Network error'))
         xhr.setRequestHeader('Content-Type', 'application/octet-stream')
         xhr.send(data)
       })
 
-      intervals.value = collected
+      intervals.value = result.intervals || collected
       results.value = result
       status.value = 'ready'
     } catch (e) {

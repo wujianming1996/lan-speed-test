@@ -9,7 +9,7 @@ const server = http.createServer(app)
 const wss = new WebSocketServer({ server })
 
 app.use(cors())
-app.use(express.raw({ limit: '200mb', type: 'application/octet-stream' }))
+app.use(express.json())
 
 let uploadState = { bytesReceived: 0, startTime: 0, intervals: [] }
 

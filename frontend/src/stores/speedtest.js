@@ -19,16 +19,14 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
     currentSpeed.value = 0
 
     try {
-      const size = 50 * 1024 * 1024
-      const response = await fetch(`/api/speedtest/download?size=${size}&duration=10`, {
+      const response = await fetch('/api/speedtest/download?duration=10&size=52428800', {
         signal: ab.signal
       })
       const reader = response.body.getReader()
-      let lastTime = performance.now()
-      let lastBytes = 0
-      let totalBytes = 0
       const startTime = performance.now()
       const collected = []
+      let totalBytes = 0
+      let lastSample = startTime
 
       while (true) {
         const { done, value } = await reader.read()
@@ -36,20 +34,18 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
 
         totalBytes += value.length
         const now = performance.now()
-        const elapsed = (now - lastTime) / 1000
 
-        if (elapsed >= 0.2) {
-          const speedBps = (value.length * 8) / elapsed
-          const point = {
-            time: (now - startTime) / 1000,
-            bits_per_second: speedBps,
+        if (now - lastSample >= 200) {
+          const elapsed = (now - startTime) / 1000
+          const avgBps = totalBytes * 8 / elapsed
+          collected.push({
+            time: Math.round(elapsed * 100) / 100,
+            bits_per_second: Math.round(avgBps),
             bytes: totalBytes
-          }
-          collected.push(point)
+          })
           intervals.value = [...collected]
-          currentSpeed.value = speedBps
-          lastTime = now
-          lastBytes = totalBytes
+          currentSpeed.value = avgBps
+          lastSample = now
         }
       }
 
@@ -60,7 +56,6 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
         bandwidth: formatBandwidth(avgBps),
         transfer: formatBytes(totalBytes),
         duration: Math.round(totalTime * 100) / 100,
-        retransmits: 0,
         intervals: collected
       }
       status.value = 'ready'
@@ -92,33 +87,29 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
     try {
       const startTime = performance.now()
       const collected = []
-      const lastTime = [performance.now()]
-      let intervalBytes = 0
 
       const xhr = new XMLHttpRequest()
       xhr.open('POST', '/api/speedtest/upload')
 
-      xhr.upload.onprogress = (e) => {
-        const now = performance.now()
-        intervalBytes += e.loaded - (xhr._lastLoaded || 0)
-        xhr._lastLoaded = e.loaded
-        const elapsed = (now - lastTime[0]) / 1000
-
-        if (elapsed >= 0.2) {
-          const speedBps = e.loaded * 8 / ((now - startTime) / 1000)
-          collected.push({
-            time: (now - startTime) / 1000,
-            bits_per_second: speedBps,
-            bytes: e.loaded
-          })
-          intervals.value = [...collected]
-          currentSpeed.value = speedBps
-          lastTime[0] = now
-          intervalBytes = 0
-        }
-      }
-
       const result = await new Promise((resolve, reject) => {
+        let lastSample = startTime
+
+        xhr.upload.onprogress = (e) => {
+          const now = performance.now()
+          if (now - lastSample >= 200) {
+            const elapsed = (now - startTime) / 1000
+            const avgBps = e.loaded * 8 / elapsed
+            collected.push({
+              time: Math.round(elapsed * 100) / 100,
+              bits_per_second: Math.round(avgBps),
+              bytes: e.loaded
+            })
+            intervals.value = [...collected]
+            currentSpeed.value = avgBps
+            lastSample = now
+          }
+        }
+
         ab.signal.addEventListener('abort', () => {
           xhr.abort()
           reject(new DOMException('Aborted', 'AbortError'))

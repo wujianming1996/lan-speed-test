@@ -13,32 +13,37 @@ let chart = null
 function buildOptions() {
   return {
     chart: {
-      type: 'line',
+      type: 'area',
       height: 350,
       toolbar: { show: false },
-      background: 'transparent',
-      foreColor: '#94a3b8'
+      background: '#1e293b',
+      foreColor: '#94a3b8',
+      animations: { enabled: true, dynamicAnimation: { speed: 200 } }
     },
-    stroke: { width: 2, curve: 'smooth' },
-    colors: ['#70c0e8'],
+    stroke: { width: 2, curve: 'smooth', colors: ['#70c0e8'] },
     fill: {
       type: 'gradient',
-      gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.1 }
+      gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 }
     },
+    markers: { size: 0 },
     xaxis: {
       type: 'numeric',
-      title: { text: 'Time (s)', style: { color: '#94a3b8' } },
-      labels: { style: { colors: '#94a3b8' } },
-      min: 0
+      title: { text: 'Time (s)', style: { color: '#94a3b8', fontSize: '12px' } },
+      labels: { style: { colors: '#94a3b8', fontSize: '11px' } },
+      min: 0,
+      axisBorder: { color: '#334155' },
+      axisTicks: { color: '#334155' }
     },
     yaxis: {
-      title: { text: 'Bandwidth (Mbps)', style: { color: '#94a3b8' } },
+      title: { text: 'Mbps', style: { color: '#94a3b8', fontSize: '12px' } },
       labels: {
-        style: { colors: '#94a3b8' },
+        style: { colors: '#94a3b8', fontSize: '11px' },
         formatter: v => (v / 1e6).toFixed(1)
-      }
+      },
+      axisBorder: { color: '#334155' },
+      axisTicks: { color: '#334155' }
     },
-    grid: { borderColor: '#334155' },
+    grid: { borderColor: '#334155', strokeDashArray: 3 },
     tooltip: {
       theme: 'dark',
       x: { formatter: v => v + 's' },
@@ -53,8 +58,8 @@ function toSeries(data) {
   return [{
     name: 'Bandwidth',
     data: data.map(d => ({
-      x: Math.round(d.time * 100) / 100,
-      y: Math.round(d.bits_per_second)
+      x: d.time,
+      y: d.bits_per_second
     }))
   }]
 }
@@ -85,5 +90,8 @@ onUnmounted(() => {
 <style scoped>
 .chart-wrapper {
   margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
 }
 </style>

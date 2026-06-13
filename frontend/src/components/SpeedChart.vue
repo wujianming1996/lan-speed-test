@@ -66,7 +66,7 @@ onMounted(() => {
 
 watch(() => props.data, (val) => {
   if (chart) {
-    chart.updateSeries(toSeries(val))
+    chart.updateSeries(toSeries(val)).catch(() => {})
   }
 }, { deep: true })
 

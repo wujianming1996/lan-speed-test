@@ -82,73 +82,58 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
     intervals.value = []
     currentSpeed.value = 0
 
+    const size = 50 * 1024 * 1024
+    const chunkSize = 256 * 1024
+    const data = new Uint8Array(size)
+    for (let i = 0; i < data.length; i += chunkSize) {
+      data.fill(65, i, Math.min(i + chunkSize, data.length))
+    }
+
     try {
-      const size = 50 * 1024 * 1024
       const startTime = performance.now()
       const collected = []
-      let totalSent = 0
-      let lastTime = performance.now()
-      let resolveUpload, rejectUpload
-      const uploadPromise = new Promise((res, rej) => { resolveUpload = res; rejectUpload = rej })
+      const lastTime = [performance.now()]
+      let intervalBytes = 0
 
-      const stream = new ReadableStream({
-        pull(controller) {
-          if (ab.signal.aborted) {
-            controller.close()
-            rejectUpload(new DOMException('Aborted', 'AbortError'))
-            return
-          }
-          if (totalSent >= size) {
-            controller.close()
-            const totalTime = (performance.now() - startTime) / 1000
-            resolveUpload({
-              intervals: collected,
-              bandwidth: formatBandwidth(size * 8 / totalTime),
-              transfer: formatBytes(size),
-              duration: Math.round(totalTime * 100) / 100
-            })
-            return
-          }
-          const chunkSize = Math.min(256 * 1024, size - totalSent)
-          const chunk = new Uint8Array(chunkSize).fill(65)
-          const now = performance.now()
-          const elapsed = (now - lastTime) / 1000
-          if (elapsed >= 0.2) {
-            const speedBps = (totalSent + chunkSize) * 8 / (now - startTime) * 1000
-            collected.push({
-              time: (now - startTime) / 1000,
-              bits_per_second: speedBps,
-              bytes: totalSent + chunkSize
-            })
-            intervals.value = [...collected]
-            currentSpeed.value = speedBps
-            lastTime = now
-          }
-          totalSent += chunkSize
-          controller.enqueue(chunk)
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', '/api/speedtest/upload')
+
+      xhr.upload.onprogress = (e) => {
+        const now = performance.now()
+        intervalBytes += e.loaded - (xhr._lastLoaded || 0)
+        xhr._lastLoaded = e.loaded
+        const elapsed = (now - lastTime[0]) / 1000
+
+        if (elapsed >= 0.2) {
+          const speedBps = e.loaded * 8 / ((now - startTime) / 1000)
+          collected.push({
+            time: (now - startTime) / 1000,
+            bits_per_second: speedBps,
+            bytes: e.loaded
+          })
+          intervals.value = [...collected]
+          currentSpeed.value = speedBps
+          lastTime[0] = now
+          intervalBytes = 0
         }
-      })
-
-      const response = await fetch('/api/speedtest/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/octet-stream' },
-        body: stream,
-        duplex: 'half',
-        signal: ab.signal
-      })
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`)
       }
 
-      const data = await uploadPromise
-      intervals.value = data.intervals || collected
-      results.value = {
-        bandwidth: data.bandwidth || formatBandwidth(size * 8 / ((performance.now() - startTime) / 1000)),
-        transfer: data.transfer || formatBytes(size),
-        duration: data.duration || Math.round((performance.now() - startTime) / 1000),
-        intervals: data.intervals || collected
-      }
+      const result = await new Promise((resolve, reject) => {
+        ab.signal.addEventListener('abort', () => {
+          xhr.abort()
+          reject(new DOMException('Aborted', 'AbortError'))
+        })
+        xhr.onload = () => {
+          if (xhr.status === 200) resolve(JSON.parse(xhr.responseText))
+          else reject(new Error(`Upload failed: ${xhr.status}`))
+        }
+        xhr.onerror = () => reject(new Error('Network error'))
+        xhr.setRequestHeader('Content-Type', 'application/octet-stream')
+        xhr.send(data)
+      })
+
+      intervals.value = collected
+      results.value = result
       status.value = 'ready'
     } catch (e) {
       if (e.name === 'AbortError') {

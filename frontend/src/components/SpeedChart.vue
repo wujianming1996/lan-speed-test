@@ -33,6 +33,7 @@ function buildOptions() {
       gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 }
     },
     markers: { size: 0 },
+    dataLabels: { enabled: false },
     xaxis: {
       type: 'numeric',
       title: { text: 'Time (s)', style: { color: '#94a3b8', fontSize: '12px' } },

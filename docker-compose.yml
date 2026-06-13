@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - iperf3-server
+    restart: unless-stopped
+
+  iperf3-server:
+    build:
+      context: ./iperf3
+      dockerfile: Dockerfile
+    ports:
+      - "5201:5201"
+    restart: unless-stopped

@@ -80,7 +80,7 @@ function cancel() {
       </div>
       <div v-if="isRunning" class="live-speed">
         <span class="speed-value">{{ liveBandwidth }}</span>
-        <span class="speed-label">current</span>
+        <span class="speed-label">{{ t('speedtest.current') }}</span>
       </div>
     </div>
 

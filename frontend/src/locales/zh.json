@@ -38,7 +38,8 @@
     "retransmits": "重传数",
     "realtime_chart": "实时带宽",
     "cancel": "取消",
-    "stop": "停止"
+    "stop": "停止",
+    "current": "当前速率"
   },
   "ping": {
     "title": "Ping 测试",

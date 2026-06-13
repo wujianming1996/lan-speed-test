@@ -38,7 +38,8 @@
     "retransmits": "Retransmits",
     "realtime_chart": "Real-time Bandwidth",
     "cancel": "Cancel",
-    "stop": "Stop"
+    "stop": "Stop",
+    "current": "Current Speed"
   },
   "ping": {
     "title": "Ping Test",

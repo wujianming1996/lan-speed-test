@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import Sponsor from '../components/Sponsor.vue'
 
 const router = useRouter()
 const serverInfo = ref(null)
@@ -63,6 +64,10 @@ onMounted(async () => {
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="card sponsor-card">
+      <Sponsor />
     </div>
   </div>
 </template>
@@ -135,5 +140,10 @@ onMounted(async () => {
 .card h3 {
   margin-bottom: 1rem;
   text-align: left;
+}
+
+.sponsor-card {
+  text-align: center;
+  padding: 1rem;
 }
 </style>

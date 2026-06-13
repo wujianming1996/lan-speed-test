@@ -65,6 +65,15 @@ npm run dev
 
 Edit `docker-compose.yml` to change ports or add additional iperf3 servers.
 
+## Sponsorship
+
+If this project helps you, consider buying me a coffee ☕
+
+<p align="left">
+  <img src="assets/微信.png" width="200" alt="微信">
+  <img src="assets/支付宝.jpg" width="200" alt="支付宝" style="margin-left:20px">
+</p>
+
 ## License
 
 MIT

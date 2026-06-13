@@ -15,14 +15,4 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3002:3000"
-    depends_on:
-      - iperf3-server
-    restart: unless-stopped
-
-  iperf3-server:
-    build:
-      context: ./iperf3
-      dockerfile: Dockerfile
-    ports:
-      - "5201:5201"
     restart: unless-stopped

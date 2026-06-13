@@ -36,7 +36,9 @@
     "transfer": "Transfer",
     "duration": "Duration",
     "retransmits": "Retransmits",
-    "realtime_chart": "Real-time Bandwidth"
+    "realtime_chart": "Real-time Bandwidth",
+    "cancel": "Cancel",
+    "stop": "Stop"
   },
   "ping": {
     "title": "Ping Test",

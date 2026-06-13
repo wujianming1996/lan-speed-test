@@ -2,19 +2,16 @@ import express from 'express'
 import cors from 'cors'
 import http from 'http'
 import { WebSocketServer } from 'ws'
-import { execFile, execSync } from 'child_process'
-import { randomUUID } from 'crypto'
+import crypto from 'crypto'
 
 const app = express()
 const server = http.createServer(app)
 const wss = new WebSocketServer({ server })
 
 app.use(cors())
-app.use(express.json())
+app.use(express.raw({ limit: '200mb', type: 'application/octet-stream' }))
 
-const SERVERS = [
-  { id: 'local', host: 'iperf3-server', port: 5201 }
-]
+let uploadState = { bytesReceived: 0, startTime: 0, intervals: [] }
 
 app.get('/api/status', (req, res) => {
   res.json({
@@ -25,129 +22,141 @@ app.get('/api/status', (req, res) => {
 })
 
 app.get('/api/servers', (req, res) => {
-  res.json(SERVERS)
+  res.json([
+    { id: 'local', host: 'localhost', port: 'this server' }
+  ])
 })
 
-app.post('/api/ping', (req, res) => {
-  const { host, count = 4 } = req.body
+app.get('/api/speedtest/download', (req, res) => {
+  const size = Math.min(parseInt(req.query.size) || 50 * 1024 * 1024, 200 * 1024 * 1024)
+  const duration = parseInt(req.query.duration) || 10
+  const chunkSize = 256 * 1024
+  const startTime = process.hrtime.bigint()
+  let totalSent = 0n
+  let intervalStart = startTime
+  let intervalBytes = 0n
+  let intervalIndex = 0
 
-  if (!host) {
-    return res.status(400).json({ error: 'Host is required' })
-  }
-
-  execFile('ping', ['-c', String(count), host], { timeout: 30000 }, (err, stdout, stderr) => {
-    if (err && err.code === 1) {
-      const lines = stdout.split('\n')
-      return res.json(parsePingOutput(lines, host))
-    }
-    if (err) {
-      return res.status(500).json({ error: `Ping failed: ${stderr || err.message}` })
-    }
-    const lines = stdout.split('\n')
-    res.json(parsePingOutput(lines, host))
+  res.writeHead(200, {
+    'Content-Type': 'application/octet-stream',
+    'Content-Length': size,
+    'Cache-Control': 'no-store',
+    'Access-Control-Expose-Headers': '*'
   })
-})
 
-function parsePingOutput(lines, host) {
-  const result = {
-    host,
-    transmitted: 0,
-    received: 0,
-    loss: 0,
-    rtt_min: '-',
-    rtt_avg: '-',
-    rtt_max: '-',
-    packets: []
-  }
+  const buf = crypto.randomBytes(chunkSize)
+  let aborted = false
 
-  for (const line of lines) {
-    const icmpMatch = line.match(/(\d+) bytes from/)
-    if (icmpMatch) {
-      const seqMatch = line.match(/icmp_seq=(\d+)/)
-      const timeMatch = line.match(/time=([\d.]+)\s*ms/)
-      const ttlMatch = line.match(/ttl=(\d+)/)
-      result.packets.push({
-        seq: seqMatch ? parseInt(seqMatch[1]) : result.packets.length,
-        time: timeMatch ? parseFloat(timeMatch[1]) : null,
-        ttl: ttlMatch ? parseInt(ttlMatch[1]) : null
+  req.on('close', () => { aborted = true })
+
+  function writeChunk() {
+    const now = process.hrtime.bigint()
+    const elapsed = Number(now - startTime) / 1e9
+
+    if (aborted || totalSent >= size || elapsed >= duration) {
+      res.end()
+      return
+    }
+
+    const remaining = size - Number(totalSent)
+    const sendSize = Math.min(chunkSize, remaining)
+
+    if (Number(now - intervalStart) / 1e9 >= 0.2) {
+      const iElapsed = Number(now - intervalStart) / 1e9
+      const bits = intervalBytes * 8n
+      uploadState.intervals.push({
+        time: elapsed,
+        bits_per_second: Number(bits) / iElapsed,
+        bytes: Number(intervalBytes)
       })
+      intervalStart = now
+      intervalBytes = 0n
     }
 
-    const statsMatch = line.match(/(\d+)\s+packets transmitted/)
-    if (statsMatch) {
-      result.transmitted = parseInt(statsMatch[1])
-      const receivedMatch = line.match(/(\d+)\s+received/)
-      if (receivedMatch) result.received = parseInt(receivedMatch[1])
-      const lossMatch = line.match(/([\d.]+)%\s+packet loss/)
-      if (lossMatch) result.loss = parseFloat(lossMatch[1])
-    }
+    totalSent += BigInt(sendSize)
+    intervalBytes += BigInt(sendSize)
 
-    const rttMatch = line.match(/rtt min\/avg\/max\/mdev = ([\d.]+)\/([\d.]+)\/([\d.]+)/)
-    if (rttMatch) {
-      result.rtt_min = `${rttMatch[1]} ms`
-      result.rtt_avg = `${rttMatch[2]} ms`
-      result.rtt_max = `${rttMatch[3]} ms`
-    }
-  }
-
-  return result
-}
-
-app.post('/api/speedtest', (req, res) => {
-  const { server_id, direction = 'download', duration = 10 } = req.body
-
-  if (!server_id) {
-    return res.status(400).json({ error: 'Server ID is required' })
-  }
-
-  const server = SERVERS.find(s => s.id === server_id)
-  if (!server) {
-    return res.status(404).json({ error: 'Server not found' })
-  }
-
-  const args = ['-c', server.host, '-p', String(server.port), '-t', String(duration), '-J']
-
-  if (direction === 'upload') {
-    args.push('-R')
-  }
-
-  execFile('iperf3', args, { timeout: (duration + 10) * 1000 }, (err, stdout, stderr) => {
-    if (err) {
-      return res.status(500).json({ error: `iperf3 failed: ${stderr || err.message}` })
-    }
-
-    try {
-      const data = JSON.parse(stdout)
-      res.json(parseIperf3Output(data))
-    } catch (e) {
-      res.status(500).json({ error: 'Failed to parse iperf3 output' })
-    }
-  })
-})
-
-function parseIperf3Output(data) {
-  const end = data.end
-  const sum = end.sum_received || end.sum_sent || {}
-
-  return {
-    bandwidth: formatBandwidth(sum.bits_per_second),
-    transfer: formatBytes(sum.bytes),
-    duration: end.sum_sent?.seconds || end.sum_received?.seconds || 0,
-    retransmits: sum.retransmits || 0,
-    intervals: (data.intervals || []).map(iv => {
-      const stream = iv.streams?.[0] || {}
-      return {
-        time: stream.seconds || 0,
-        bits_per_second: stream.bits_per_second || 0,
-        bytes: stream.bytes || 0,
-        retransmits: stream.retransmits || 0
-      }
+    res.write(sendSize === chunkSize ? buf : buf.subarray(0, sendSize), () => {
+      setImmediate(writeChunk)
     })
   }
-}
+
+  writeChunk()
+})
+
+app.post('/api/speedtest/upload', (req, res) => {
+  const startTime = process.hrtime.bigint()
+  const contentLength = parseInt(req.headers['content-length']) || 0
+  let received = 0
+
+  uploadState = { bytesReceived: 0, startTime: Date.now(), intervals: [] }
+  let lastInterval = startTime
+  let intervalBytes = 0n
+
+  req.on('data', (chunk) => {
+    received += chunk.length
+    const now = process.hrtime.bigint()
+    intervalBytes += BigInt(chunk.length)
+
+    if (Number(now - lastInterval) / 1e9 >= 0.2) {
+      const elapsed = Number(now - lastInterval) / 1e9
+      const bits = intervalBytes * 8n
+      uploadState.intervals.push({
+        time: Number(now - startTime) / 1e9,
+        bits_per_second: Number(bits) / elapsed,
+        bytes: Number(intervalBytes)
+      })
+      lastInterval = now
+      intervalBytes = 0n
+    }
+
+    wss.clients.forEach(client => {
+      if (client.readyState === 1) {
+        client.send(JSON.stringify({
+          type: 'upload-progress',
+          received,
+          total: contentLength,
+          elapsed: Number(process.hrtime.bigint() - startTime) / 1e9
+        }))
+      }
+    })
+  })
+
+  req.on('end', () => {
+    const elapsed = Number(process.hrtime.bigint() - startTime) / 1e9
+    res.json({
+      bandwidth: formatBandwidth(received * 8 / elapsed),
+      transfer: formatBytes(received),
+      duration: Math.round(elapsed * 100) / 100,
+      intervals: uploadState.intervals
+    })
+  })
+})
+
+app.get('/api/ping/echo', (req, res) => {
+  res.json({ timestamp: Date.now() })
+})
+
+wss.on('connection', (ws) => {
+  ws.on('message', (raw) => {
+    try {
+      const msg = JSON.parse(raw)
+      if (msg.type === 'ping') {
+        ws.send(JSON.stringify({
+          type: 'pong',
+          seq: msg.seq,
+          clientTime: msg.clientTime,
+          serverTime: Date.now()
+        }))
+      }
+    } catch {
+      // ignore invalid messages
+    }
+  })
+})
 
 function formatBandwidth(bps) {
-  if (!bps) return '0 bps'
+  if (!bps || bps === Infinity) return '0 bps'
   if (bps >= 1e9) return `${(bps / 1e9).toFixed(2)} Gbps`
   if (bps >= 1e6) return `${(bps / 1e6).toFixed(2)} Mbps`
   if (bps >= 1e3) return `${(bps / 1e3).toFixed(2)} Kbps`

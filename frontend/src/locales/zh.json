@@ -36,7 +36,9 @@
     "transfer": "传输量",
     "duration": "时长",
     "retransmits": "重传数",
-    "realtime_chart": "实时带宽"
+    "realtime_chart": "实时带宽",
+    "cancel": "取消",
+    "stop": "停止"
   },
   "ping": {
     "title": "Ping 测试",

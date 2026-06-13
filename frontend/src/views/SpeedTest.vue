@@ -1,25 +1,37 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSpeedTestStore } from '../stores/speedtest'
 import SpeedChart from '../components/SpeedChart.vue'
 
 const { t } = useI18n()
 const store = useSpeedTestStore()
-const selectedServer = ref('')
 const direction = ref('download')
 
-onMounted(() => {
-  store.fetchServers()
-})
+const canStart = computed(() => store.status === 'ready')
+const isRunning = computed(() => store.status === 'running')
+const liveBandwidth = computed(() => formatBandwidth(store.currentSpeed))
 
-const canStart = computed(() => {
-  return store.status !== 'running' && selectedServer.value
-})
+function formatBandwidth(bps) {
+  if (!bps || !isFinite(bps)) return '0 bps'
+  if (bps >= 1e9) return `${(bps / 1e9).toFixed(2)} Gbps`
+  if (bps >= 1e6) return `${(bps / 1e6).toFixed(2)} Mbps`
+  if (bps >= 1e3) return `${(bps / 1e3).toFixed(2)} Kbps`
+  return `${bps.toFixed(2)} bps`
+}
 
-async function runTest() {
+function runTest() {
   if (!canStart.value) return
-  await store.startSpeedTest(selectedServer.value, direction.value)
+  const ab = new AbortController()
+  if (direction.value === 'download') {
+    store.startDownloadTest(ab)
+  } else {
+    store.startUploadTest(ab)
+  }
+}
+
+function cancel() {
+  store.cancelTest()
 }
 </script>
 
@@ -30,16 +42,6 @@ async function runTest() {
 
     <div class="card">
       <div class="test-controls">
-        <div class="control-group">
-          <label>{{ t('speedtest.server') }}</label>
-          <select v-model="selectedServer">
-            <option value="">{{ t('speedtest.select_server') }}</option>
-            <option v-for="s in store.servers" :key="s.id" :value="s.id">
-              {{ s.host }}:{{ s.port }}
-            </option>
-          </select>
-        </div>
-
         <div class="control-group">
           <label>{{ t('speedtest.direction') }}</label>
           <div class="direction-toggle">
@@ -60,13 +62,25 @@ async function runTest() {
 
         <div class="control-group action">
           <button
+            v-if="!isRunning"
             class="btn btn-primary"
             :disabled="!canStart"
             @click="runTest"
           >
-            {{ store.status === 'running' ? '⏳ ' + t('speedtest.testing') : '🚀 ' + t('speedtest.start') }}
+            🚀 {{ t('speedtest.start') }}
+          </button>
+          <button
+            v-else
+            class="btn btn-danger"
+            @click="cancel"
+          >
+            ⏹ {{ t('speedtest.cancel') }}
           </button>
         </div>
+      </div>
+      <div v-if="isRunning" class="live-speed">
+        <span class="speed-value">{{ liveBandwidth }}</span>
+        <span class="speed-label">current</span>
       </div>
     </div>
 
@@ -89,16 +103,12 @@ async function runTest() {
           <span class="result-label">{{ t('speedtest.duration') }}</span>
           <span class="result-value">{{ store.results.duration }}s</span>
         </div>
-        <div class="result-item">
-          <span class="result-label">{{ t('speedtest.retransmits') }}</span>
-          <span class="result-value">{{ store.results.retransmits }}</span>
-        </div>
       </div>
     </div>
 
-    <div v-if="store.results?.intervals" class="card">
+    <div class="card">
       <h3>{{ t('speedtest.realtime_chart') }}</h3>
-      <SpeedChart :data="store.results.intervals" />
+      <SpeedChart :data="store.intervals" :live="isRunning" />
     </div>
   </div>
 </template>
@@ -142,6 +152,27 @@ h2 {
 
 .direction-toggle .btn {
   flex: 1;
+}
+
+.live-speed {
+  margin-top: 1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.speed-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-label {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
 }
 
 .results-grid {

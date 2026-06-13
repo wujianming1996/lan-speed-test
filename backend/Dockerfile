@@ -3,8 +3,8 @@ FROM node:20-alpine
 RUN apk add --no-cache iperf3
 
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+COPY package.json ./
+RUN npm install --omit=dev
 
 COPY src/ ./src/
 

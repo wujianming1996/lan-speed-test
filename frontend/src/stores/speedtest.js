@@ -133,6 +133,7 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/octet-stream' },
         body: stream,
+        duplex: 'half',
         signal: ab.signal
       })
 

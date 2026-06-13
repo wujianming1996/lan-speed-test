@@ -61,7 +61,7 @@ function toSeries(data) {
 
 onMounted(() => {
   chart = new ApexCharts(chartRef.value, buildOptions())
-  chart.render()
+  chart.render().catch(() => {})
 })
 
 watch(() => props.data, (val) => {

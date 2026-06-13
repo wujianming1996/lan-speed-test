@@ -6,11 +6,12 @@ Internal network throughput measurement tool with a modern web UI.
 
 ## Features
 
-- ⚡ **iPerf3 Speed Test** - Measure bandwidth (download/upload) using iPerf3
-- 📡 **Ping Test** - Measure latency to target hosts
+- ⚡ **Browser Speed Test** - Measure download/upload bandwidth directly from your browser
+- 📡 **Ping Test** - Measure latency to target hosts via WebSocket
 - 📊 **Real-time Charts** - Visual bandwidth graphs using ApexCharts
 - 🐳 **Docker Compose** - One-command deployment
-- 🌐 **Web UI** - Vue 3 + Vite frontend with dark theme
+- 🌐 **Web UI** - Vue 3 + Vite frontend with dark theme, H5 mobile support
+- 🌏 **Bilingual** - Chinese / English i18n support
 
 ## Quick Start
 
@@ -18,36 +19,26 @@ Internal network throughput measurement tool with a modern web UI.
 docker compose up -d
 ```
 
-Open `http://localhost:8080` in your browser.
+Open `http://localhost:8082` in your browser.
 
 ## Architecture
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌──────────────┐
-│  Frontend   │────▶│   Backend   │────▶│ iperf3-server│
-│  Vue 3/NGINX│     │  Express.js │     │   (Alpine)   │
-│   :8080     │     │   :3000     │     │   :5201      │
-└─────────────┘     └─────────────┘     └──────────────┘
+┌─────────────┐     ┌─────────────┐
+│  Frontend   │────▶│   Backend   │
+│  Vue 3/Nginx│     │  Express.js │
+│   :8082     │     │   :3002     │
+└─────────────┘     └─────────────┘
 ```
 
 ## Usage
 
 ### Web UI
 
-1. Navigate to `http://localhost:8080`
+1. Navigate to `http://localhost:8082`
 2. Go to **Speed Test** tab
-3. Select server and direction (download/upload)
+3. Choose download or upload
 4. Click "Start Test" and view real-time results
-
-### CLI (Direct)
-
-```bash
-# Download test
-iperf3 -c <server-ip> -p 5201 -t 10
-
-# Upload test
-iperf3 -c <server-ip> -p 5201 -t 10 -R
-```
 
 ## Development
 
@@ -65,7 +56,7 @@ npm run dev
 
 ## Configuration
 
-Edit `docker-compose.yml` to change ports or add additional iperf3 servers.
+Edit `docker-compose.yml` to change ports.
 
 ## Sponsorship
 

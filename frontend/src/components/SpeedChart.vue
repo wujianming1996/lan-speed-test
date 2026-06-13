@@ -9,12 +9,19 @@ const props = defineProps({
 
 const chartRef = ref(null)
 let chart = null
+let resizeObserver = null
+
+function getChartHeight() {
+  if (window.innerWidth <= 480) return 220
+  if (window.innerWidth <= 768) return 260
+  return 350
+}
 
 function buildOptions() {
   return {
     chart: {
       type: 'area',
-      height: 350,
+      height: getChartHeight(),
       toolbar: { show: false },
       background: '#1e293b',
       foreColor: '#94a3b8',
@@ -64,9 +71,19 @@ function toSeries(data) {
   }]
 }
 
+function handleResize() {
+  if (chart) {
+    chart.updateOptions({ chart: { height: getChartHeight() } }, false, false, false).catch(() => {})
+  }
+}
+
 onMounted(() => {
   chart = new ApexCharts(chartRef.value, buildOptions())
   chart.render().catch(() => {})
+
+  resizeObserver = new ResizeObserver(() => handleResize())
+  if (chartRef.value) resizeObserver.observe(chartRef.value)
+  window.addEventListener('resize', handleResize)
 })
 
 watch(() => props.data, (val) => {
@@ -76,6 +93,8 @@ watch(() => props.data, (val) => {
 }, { deep: true })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  if (resizeObserver) resizeObserver.disconnect()
   if (chart) {
     chart.destroy()
     chart = null
@@ -93,5 +112,11 @@ onUnmounted(() => {
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .chart-wrapper {
+    margin-top: 0.75rem;
+  }
 }
 </style>

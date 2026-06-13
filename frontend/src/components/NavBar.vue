@@ -21,6 +21,7 @@ function switchLang(lang) {
 </script>
 
 <template>
+  <!-- Top bar (desktop + mobile) -->
   <nav class="navbar">
     <div class="nav-brand" @click="router.push('/')">
       <span class="brand-icon">🌐</span>
@@ -31,7 +32,7 @@ function switchLang(lang) {
         v-for="link in links"
         :key="link.path"
         :to="link.path"
-        class="nav-link"
+        class="nav-link desktop-only"
         :class="{ active: route.path === link.path }"
       >
         <span class="nav-icon">{{ link.icon }}</span>
@@ -47,12 +48,32 @@ function switchLang(lang) {
           @click="switchLang('en')"
         >EN</button>
       </div>
-      <a href="javascript:void(0)" class="nav-link sponsor-link" @click="showDonate = !showDonate">
+      <a href="javascript:void(0)" class="nav-link sponsor-link desktop-only" @click="showDonate = !showDonate">
         <span>☕</span>
         <span>{{ showDonate ? t('nav.close') : t('nav.donate') }}</span>
       </a>
     </div>
   </nav>
+
+  <!-- Mobile bottom tab bar -->
+  <nav class="bottom-tab-bar">
+    <router-link
+      v-for="link in links"
+      :key="link.path"
+      :to="link.path"
+      class="tab-item"
+      :class="{ active: route.path === link.path }"
+    >
+      <span class="tab-icon">{{ link.icon }}</span>
+      <span class="tab-label">{{ link.label() }}</span>
+    </router-link>
+    <a href="javascript:void(0)" class="tab-item" @click="showDonate = true">
+      <span class="tab-icon">☕</span>
+      <span class="tab-label">{{ t('nav.donate') }}</span>
+    </a>
+  </nav>
+
+  <!-- Donate modal -->
   <div v-if="showDonate" class="donate-overlay" @click="showDonate = false">
     <div class="donate-modal" @click.stop>
       <h3>{{ t('donate.title') }}</h3>
@@ -72,6 +93,7 @@ function switchLang(lang) {
 </template>
 
 <style scoped>
+/* ===== Desktop top bar ===== */
 .navbar {
   display: flex;
   align-items: center;
@@ -156,6 +178,7 @@ function switchLang(lang) {
   color: #0f172a;
 }
 
+/* ===== Donate Modal ===== */
 .donate-overlay {
   position: fixed;
   top: 0;
@@ -213,5 +236,111 @@ function switchLang(lang) {
 .qr-item span {
   color: var(--text-secondary);
   font-size: 0.85rem;
+}
+
+/* ===== Mobile Bottom Tab Bar ===== */
+.bottom-tab-bar {
+  display: none;
+}
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.75rem 0;
+    margin-bottom: 1rem;
+  }
+
+  .nav-links {
+    gap: 0.35rem;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .lang-switcher {
+    margin-right: 0;
+  }
+
+  .bottom-tab-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    padding: 0.4rem 0;
+    padding-bottom: calc(0.4rem + var(--safe-bottom));
+    z-index: 999;
+    justify-content: space-around;
+  }
+
+  .tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    transition: all 0.2s;
+    text-decoration: none;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .tab-item:active {
+    transform: scale(0.95);
+  }
+
+  .tab-item.active {
+    color: var(--accent);
+    background: rgba(112, 192, 232, 0.1);
+  }
+
+  .tab-icon {
+    font-size: 1.25rem;
+  }
+
+  .tab-label {
+    font-size: 0.65rem;
+    line-height: 1;
+  }
+
+  /* Adjust page content for bottom bar */
+  #app {
+    padding-bottom: calc(4rem + var(--safe-bottom));
+  }
+
+  .donate-modal {
+    width: 92%;
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+
+  .qr-grid {
+    gap: 1rem;
+  }
+
+  .qr-item img {
+    width: 130px;
+    height: 130px;
+  }
+}
+
+@media (max-width: 375px) {
+  .brand-text {
+    font-size: 1rem;
+  }
+
+  .tab-item {
+    padding: 0.35rem 0.5rem;
+  }
+
+  .tab-icon {
+    font-size: 1.1rem;
+  }
 }
 </style>

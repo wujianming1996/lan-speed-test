@@ -139,13 +139,55 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-.card h3 {
-  margin-bottom: 1rem;
-  text-align: left;
-}
-
 .sponsor-card {
   text-align: center;
   padding: 1rem;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 768px) {
+  .hero {
+    padding: 1.5rem 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero h1 {
+    font-size: 1.75rem;
+  }
+
+  .hero p {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .hero-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .steps li {
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .sponsor-card {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .hero p {
+    font-size: 0.85rem;
+  }
 }
 </style>

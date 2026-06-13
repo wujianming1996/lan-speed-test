@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSpeedTestStore } from '../stores/speedtest'
 import SpeedChart from '../components/SpeedChart.vue'
@@ -99,7 +99,7 @@ function cancel() {
           <span class="result-label">{{ t('speedtest.transfer') }}</span>
           <span class="result-value">{{ store.results.transfer }}</span>
         </div>
-        <div class="result-item">
+        <div class="result-item full-width">
           <span class="result-label">{{ t('speedtest.duration') }}</span>
           <span class="result-value">{{ store.results.duration }}s</span>
         </div>
@@ -117,15 +117,6 @@ function cancel() {
 .speedtest {
   max-width: 900px;
   margin: 0 auto;
-}
-
-h2 {
-  margin-bottom: 0.25rem;
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  margin-bottom: 1.5rem;
 }
 
 .test-controls {
@@ -191,6 +182,10 @@ h2 {
   border-radius: 8px;
 }
 
+.result-item.full-width {
+  grid-column: 1 / -1;
+}
+
 .result-label {
   color: var(--text-secondary);
   font-size: 0.8rem;
@@ -206,5 +201,65 @@ h2 {
 .result-value.highlight {
   color: var(--accent);
   font-size: 1.5rem;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 768px) {
+  .test-controls {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .control-group {
+    min-width: 100%;
+  }
+
+  .control-group.action {
+    width: 100%;
+  }
+
+  .control-group.action .btn {
+    width: 100%;
+  }
+
+  .direction-toggle .btn {
+    font-size: 0.85rem;
+    padding: 0.6rem 0.8rem;
+  }
+
+  .speed-value {
+    font-size: 2.5rem;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .result-item {
+    padding: 0.85rem;
+  }
+
+  .result-value {
+    font-size: 1.1rem;
+  }
+
+  .result-value.highlight {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .speed-value {
+    font-size: 2rem;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .result-item.full-width {
+    grid-column: auto;
+  }
 }
 </style>

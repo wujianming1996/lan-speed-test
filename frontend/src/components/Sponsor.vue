@@ -83,4 +83,33 @@ const showDonate = ref(false)
   color: var(--text-secondary);
   font-size: 0.85rem;
 }
+
+/* ===== Mobile ===== */
+@media (max-width: 768px) {
+  .donate-qr {
+    padding: 1rem;
+  }
+
+  .qr-grid {
+    gap: 1rem;
+  }
+
+  .qr-item img {
+    width: 130px;
+    height: 130px;
+  }
+}
+
+@media (max-width: 375px) {
+  .qr-grid {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .qr-item img {
+    width: 150px;
+    height: 150px;
+  }
+}
 </style>

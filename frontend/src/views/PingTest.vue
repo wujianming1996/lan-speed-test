@@ -181,15 +181,6 @@ function stopPing() {
   margin: 0 auto;
 }
 
-h2 {
-  margin-bottom: 0.25rem;
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  margin-bottom: 1.5rem;
-}
-
 .ping-controls {
   display: flex;
   gap: 1rem;
@@ -266,7 +257,43 @@ h2 {
   color: var(--danger);
 }
 
-.card h3 {
-  margin-bottom: 0.5rem;
+/* ===== Mobile ===== */
+@media (max-width: 768px) {
+  .ping-controls {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .ping-controls .btn {
+    width: 100%;
+  }
+
+  .packet-line {
+    font-size: 0.8rem;
+    gap: 0.75rem;
+  }
+
+  .packet-stream {
+    max-height: 200px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .stat-item {
+    padding: 0.85rem;
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 </style>

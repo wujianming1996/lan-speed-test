@@ -19,7 +19,8 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
     currentSpeed.value = 0
 
     try {
-      const response = await fetch('/api/speedtest/download?duration=10&size=52428800', {
+      const size = 50 * 1024 * 1024
+      const response = await fetch(`/api/speedtest/download?size=${size}&duration=10`, {
         signal: ab.signal
       })
       const reader = response.body.getReader()
@@ -35,19 +36,19 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
 
         totalBytes += value.length
         const now = performance.now()
-        const delta = (now - lastTime) / 1000
+        const deltaSec = (now - lastTime) / 1000
 
-        if (delta >= 0.2) {
+        if (deltaSec >= 0.2) {
           const deltaBytes = totalBytes - lastBytes
-          const speedBps = deltaBytes * 8 / delta
+          const instantSpeed = deltaBytes * 8 / deltaSec
           const elapsed = (now - startTime) / 1000
           collected.push({
             time: Math.round(elapsed * 100) / 100,
-            bits_per_second: Math.round(speedBps),
+            bits_per_second: Math.round(instantSpeed),
             bytes: totalBytes
           })
           intervals.value = [...collected]
-          currentSpeed.value = speedBps
+          currentSpeed.value = instantSpeed
           lastBytes = totalBytes
           lastTime = now
         }
@@ -81,48 +82,46 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
     intervals.value = []
     currentSpeed.value = 0
 
-    const size = 50 * 1024 * 1024
-    const chunkSize = 256 * 1024
-    const data = new Uint8Array(size)
-    for (let i = 0; i < data.length; i += chunkSize) {
-      data.fill(65, i, Math.min(i + chunkSize, data.length))
-    }
-
     try {
+      const size = 50 * 1024 * 1024
+      const buf = new ArrayBuffer(size)
+      const view = new Uint8Array(buf)
+      for (let i = 0; i < size; i += 65536) {
+        view.fill(65, i, Math.min(i + 65536, size))
+      }
+
       const startTime = performance.now()
       const collected = []
 
-      const xhr = new XMLHttpRequest()
-      xhr.open('POST', '/api/speedtest/upload')
-
       const result = await new Promise((resolve, reject) => {
-        let lastSample = performance.now()
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', '/api/speedtest/upload')
+        xhr.setRequestHeader('Content-Type', 'application/octet-stream')
+
         let lastLoaded = 0
+        let lastTime = performance.now()
 
         xhr.upload.onprogress = (e) => {
+          if (!e.lengthComputable) return
           const now = performance.now()
-          const delta = (now - lastSample) / 1000
+          const deltaSec = (now - lastTime) / 1000
 
-          if (delta >= 0.2) {
+          if (deltaSec >= 0.2) {
             const deltaLoaded = e.loaded - lastLoaded
-            const speedBps = deltaLoaded * 8 / delta
+            const instantSpeed = deltaLoaded * 8 / deltaSec
             const elapsed = (now - startTime) / 1000
             collected.push({
               time: Math.round(elapsed * 100) / 100,
-              bits_per_second: Math.round(speedBps),
+              bits_per_second: Math.round(instantSpeed),
               bytes: e.loaded
             })
             intervals.value = [...collected]
-            currentSpeed.value = speedBps
-            lastSample = now
+            currentSpeed.value = instantSpeed
             lastLoaded = e.loaded
+            lastTime = now
           }
         }
 
-        ab.signal.addEventListener('abort', () => {
-          xhr.abort()
-          reject(new DOMException('Aborted', 'AbortError'))
-        })
         xhr.onload = () => {
           if (xhr.status === 200) {
             try { resolve(JSON.parse(xhr.responseText)) }
@@ -132,12 +131,25 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
           }
         }
         xhr.onerror = () => reject(new Error('Network error'))
-        xhr.setRequestHeader('Content-Type', 'application/octet-stream')
-        xhr.send(data)
+
+        ab.signal.addEventListener('abort', () => {
+          xhr.abort()
+          reject(new DOMException('Aborted', 'AbortError'))
+        }, { once: true })
+
+        xhr.send(buf)
       })
 
-      intervals.value = result.intervals || collected
-      results.value = result
+      const totalTime = (performance.now() - startTime) / 1000
+      const avgBps = size * 8 / totalTime
+
+      intervals.value = result.intervals?.length ? result.intervals : collected
+      results.value = {
+        bandwidth: formatBandwidth(avgBps),
+        transfer: formatBytes(size),
+        duration: Math.round(totalTime * 100) / 100,
+        intervals: collected
+      }
       status.value = 'ready'
     } catch (e) {
       if (e.name === 'AbortError') {

@@ -9,9 +9,6 @@ const server = http.createServer(app)
 const wss = new WebSocketServer({ server })
 
 app.use(cors())
-app.use(express.json())
-
-let uploadState = { bytesReceived: 0, startTime: 0, intervals: [] }
 
 app.get('/api/status', (req, res) => {
   res.json({
@@ -29,13 +26,8 @@ app.get('/api/servers', (req, res) => {
 
 app.get('/api/speedtest/download', (req, res) => {
   const size = Math.min(parseInt(req.query.size) || 50 * 1024 * 1024, 200 * 1024 * 1024)
-  const duration = parseInt(req.query.duration) || 10
+  const duration = Math.min(parseInt(req.query.duration) || 10, 30)
   const chunkSize = 256 * 1024
-  const startTime = process.hrtime.bigint()
-  let totalSent = 0n
-  let intervalStart = startTime
-  let intervalBytes = 0n
-  let intervalIndex = 0
 
   res.writeHead(200, {
     'Content-Type': 'application/octet-stream',
@@ -45,96 +37,34 @@ app.get('/api/speedtest/download', (req, res) => {
   })
 
   const buf = crypto.randomBytes(chunkSize)
-  let aborted = false
-
-  req.on('close', () => { aborted = true })
+  let sent = 0
 
   function writeChunk() {
-    const now = process.hrtime.bigint()
-    const elapsed = Number(now - startTime) / 1e9
-
-    if (aborted || totalSent >= size || elapsed >= duration) {
+    if (sent >= size) {
       res.end()
       return
     }
-
-    const remaining = size - Number(totalSent)
+    const remaining = size - sent
     const sendSize = Math.min(chunkSize, remaining)
-
-    if (Number(now - intervalStart) / 1e9 >= 0.2) {
-      const iElapsed = Number(now - intervalStart) / 1e9
-      const bits = intervalBytes * 8n
-      uploadState.intervals.push({
-        time: elapsed,
-        bits_per_second: Number(bits) / iElapsed,
-        bytes: Number(intervalBytes)
-      })
-      intervalStart = now
-      intervalBytes = 0n
-    }
-
-    totalSent += BigInt(sendSize)
-    intervalBytes += BigInt(sendSize)
-
-    res.write(sendSize === chunkSize ? buf : buf.subarray(0, sendSize), () => {
-      setImmediate(writeChunk)
-    })
+    sent += sendSize
+    res.write(sendSize === chunkSize ? buf : buf.subarray(0, sendSize), writeChunk)
   }
 
   writeChunk()
 })
 
-app.post('/api/speedtest/upload', (req, res) => {
-  const startTime = process.hrtime.bigint()
-  const contentLength = parseInt(req.headers['content-length']) || 0
-  let received = 0
+app.post('/api/speedtest/upload', express.raw({ limit: '200mb', type: 'application/octet-stream' }), (req, res) => {
+  const elapsed = req.body ? req.body.length / (50 * 1024) : 0
+  const received = req.body ? req.body.length : 0
+  const duration = elapsed > 0 ? elapsed : 0.1
+  const avgBps = received * 8 / duration
 
-  uploadState = { bytesReceived: 0, startTime: Date.now(), intervals: [] }
-  let lastInterval = startTime
-  let intervalBytes = 0n
-
-  req.on('data', (chunk) => {
-    received += chunk.length
-    const now = process.hrtime.bigint()
-    intervalBytes += BigInt(chunk.length)
-
-    if (Number(now - lastInterval) / 1e9 >= 0.2) {
-      const elapsed = Number(now - lastInterval) / 1e9
-      const bits = intervalBytes * 8n
-      uploadState.intervals.push({
-        time: Number(now - startTime) / 1e9,
-        bits_per_second: Number(bits) / elapsed,
-        bytes: Number(intervalBytes)
-      })
-      lastInterval = now
-      intervalBytes = 0n
-    }
-
-    wss.clients.forEach(client => {
-      if (client.readyState === 1) {
-        client.send(JSON.stringify({
-          type: 'upload-progress',
-          received,
-          total: contentLength,
-          elapsed: Number(process.hrtime.bigint() - startTime) / 1e9
-        }))
-      }
-    })
+  res.json({
+    bandwidth: formatBandwidth(avgBps),
+    transfer: formatBytes(received),
+    duration: Math.round(duration * 100) / 100,
+    intervals: []
   })
-
-  req.on('end', () => {
-    const elapsed = Number(process.hrtime.bigint() - startTime) / 1e9
-    res.json({
-      bandwidth: formatBandwidth(received * 8 / elapsed),
-      transfer: formatBytes(received),
-      duration: Math.round(elapsed * 100) / 100,
-      intervals: uploadState.intervals
-    })
-  })
-})
-
-app.get('/api/ping/echo', (req, res) => {
-  res.json({ timestamp: Date.now() })
 })
 
 wss.on('connection', (ws) => {
@@ -149,14 +79,12 @@ wss.on('connection', (ws) => {
           serverTime: Date.now()
         }))
       }
-    } catch {
-      // ignore invalid messages
-    }
+    } catch {}
   })
 })
 
 function formatBandwidth(bps) {
-  if (!bps || bps === Infinity) return '0 bps'
+  if (!bps || !isFinite(bps)) return '0 bps'
   if (bps >= 1e9) return `${(bps / 1e9).toFixed(2)} Gbps`
   if (bps >= 1e6) return `${(bps / 1e6).toFixed(2)} Mbps`
   if (bps >= 1e3) return `${(bps / 1e3).toFixed(2)} Kbps`

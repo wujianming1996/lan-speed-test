@@ -45,7 +45,7 @@ function buildOptions() {
       title: { text: 'Mbps', style: { color: '#94a3b8', fontSize: '12px' } },
       labels: {
         style: { colors: '#94a3b8', fontSize: '11px' },
-        formatter: v => (v / 1e6).toFixed(1)
+        formatter: v => (v / 1e6).toFixed(1) + ' Mbps'
       },
       axisBorder: { color: '#334155' },
       axisTicks: { color: '#334155' }

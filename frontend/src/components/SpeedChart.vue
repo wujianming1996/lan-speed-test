@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch, ref } from 'vue'
+import { computed } from 'vue'
 import VueApexCharts from 'vue-apexcharts'
 
 const props = defineProps({
@@ -7,31 +7,19 @@ const props = defineProps({
   live: Boolean
 })
 
-const chartKey = ref(0)
-
-watch(() => props.data?.length, () => {
-  if (props.live) chartKey.value++
-})
-
 const chartOptions = computed(() => ({
   chart: {
-    id: 'realtime-speed',
     type: 'line',
     height: 350,
     toolbar: { show: false },
     background: 'transparent',
     foreColor: '#94a3b8',
     animations: {
-      enabled: props.live,
-      dynamicAnimation: {
-        speed: 200
-      }
+      enabled: true,
+      dynamicAnimation: { speed: 200 }
     }
   },
-  stroke: {
-    width: 2,
-    curve: 'smooth'
-  },
+  stroke: { width: 2, curve: 'smooth' },
   colors: ['#70c0e8'],
   fill: {
     type: 'gradient',
@@ -62,39 +50,33 @@ const chartOptions = computed(() => ({
   }
 }))
 
-const chartSeries = computed(() => [{
-  name: 'Bandwidth',
-  data: props.data.map(d => ({
-    x: Math.round(d.time * 100) / 100,
-    y: Math.round(d.bits_per_second)
-  }))
-}])
+const chartSeries = computed(() => {
+  if (!props.data || props.data.length === 0) {
+    return [{ name: 'Bandwidth', data: [] }]
+  }
+  return [{
+    name: 'Bandwidth',
+    data: props.data.map(d => ({
+      x: Math.round(d.time * 100) / 100,
+      y: Math.round(d.bits_per_second)
+    }))
+  }]
+})
 </script>
 
 <template>
   <div class="chart-wrapper">
     <VueApexCharts
-      :key="chartKey"
       :options="chartOptions"
       :series="chartSeries"
       type="line"
       height="350"
     />
-    <div v-if="live && data.length === 0" class="chart-waiting">
-      Test running, waiting for data...
-    </div>
   </div>
 </template>
 
 <style scoped>
 .chart-wrapper {
   margin-top: 1rem;
-  position: relative;
-}
-
-.chart-waiting {
-  text-align: center;
-  color: var(--text-secondary);
-  padding: 2rem;
 }
 </style>

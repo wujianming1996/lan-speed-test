@@ -84,68 +84,61 @@ export const useSpeedTestStore = defineStore('speedtest', () => {
 
     try {
       const size = 50 * 1024 * 1024
-      const chunk = new Uint8Array(256 * 1024)
-      crypto.getRandomValues(chunk)
-
       const startTime = performance.now()
       const collected = []
       let totalSent = 0
       let lastTime = performance.now()
+      let resolveUpload, rejectUpload
+      const uploadPromise = new Promise((res, rej) => { resolveUpload = res; rejectUpload = rej })
 
-      const xhr = new XMLHttpRequest()
-      xhr.open('POST', '/api/speedtest/upload')
-      xhr.setRequestHeader('Content-Type', 'application/octet-stream')
-      xhr.setRequestHeader('Content-Length', size)
-
-      const uploadPromise = new Promise((resolve, reject) => {
-        xhr.onload = () => {
-          if (xhr.status === 200) {
-            resolve(JSON.parse(xhr.responseText))
-          } else {
-            reject(new Error(`Upload failed: ${xhr.status}`))
-          }
-        }
-        xhr.onerror = () => reject(new Error('Upload failed'))
-
-        let sent = 0
-        function sendNext() {
+      const stream = new ReadableStream({
+        pull(controller) {
           if (ab.signal.aborted) {
-            xhr.abort()
-            reject(new DOMException('Aborted', 'AbortError'))
+            controller.close()
+            rejectUpload(new DOMException('Aborted', 'AbortError'))
             return
           }
-          if (sent >= size) {
-            xhr.send()
+          if (totalSent >= size) {
+            controller.close()
+            const totalTime = (performance.now() - startTime) / 1000
+            resolveUpload({
+              intervals: collected,
+              bandwidth: formatBandwidth(size * 8 / totalTime),
+              transfer: formatBytes(size),
+              duration: Math.round(totalTime * 100) / 100
+            })
             return
           }
-          const remaining = size - sent
-          const sendSize = Math.min(chunk.length, remaining)
+          const chunkSize = Math.min(256 * 1024, size - totalSent)
+          const chunk = new Uint8Array(chunkSize).fill(65)
           const now = performance.now()
           const elapsed = (now - lastTime) / 1000
-
           if (elapsed >= 0.2) {
-            const speedBps = (sendSize * 8) / elapsed
+            const speedBps = (totalSent + chunkSize) * 8 / (now - startTime) * 1000
             collected.push({
               time: (now - startTime) / 1000,
               bits_per_second: speedBps,
-              bytes: sent + sendSize
+              bytes: totalSent + chunkSize
             })
             intervals.value = [...collected]
             currentSpeed.value = speedBps
             lastTime = now
           }
-
-          sent += sendSize
-          xhr.send(chunk.subarray(0, sendSize))
+          totalSent += chunkSize
+          controller.enqueue(chunk)
         }
-
-        ab.signal.addEventListener('abort', () => {
-          xhr.abort()
-          reject(new DOMException('Aborted', 'AbortError'))
-        })
-
-        sendNext()
       })
+
+      const response = await fetch('/api/speedtest/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: stream,
+        signal: ab.signal
+      })
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`)
+      }
 
       const data = await uploadPromise
       intervals.value = data.intervals || collected

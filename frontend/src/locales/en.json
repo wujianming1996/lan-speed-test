@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "speedtest": "Speed Test",
+    "ping": "Ping",
+    "donate": "Donate",
+    "close": "Close"
+  },
+  "home": {
+    "title": "LAN Speed Test",
+    "subtitle": "Internal network throughput measurement tool",
+    "start_speedtest": "Start Speed Test",
+    "start_ping": "Ping Test",
+    "quick_start": "Quick Start",
+    "quick_start_step1": "Select an iperf3 server from the list",
+    "quick_start_step2": "Choose download or upload test",
+    "quick_start_step3": "Wait for the test to complete",
+    "quick_start_step4": "View real-time bandwidth chart",
+    "server_status": "Server Status",
+    "status": "Status",
+    "online": "Online",
+    "connections": "Connections"
+  },
+  "speedtest": {
+    "title": "Speed Test",
+    "subtitle": "Measure bandwidth between your browser and iperf3 server",
+    "server": "Server",
+    "select_server": "Select a server...",
+    "direction": "Direction",
+    "download": "Download",
+    "upload": "Upload",
+    "start": "Start Test",
+    "testing": "Testing...",
+    "results": "Results",
+    "bandwidth": "Bandwidth",
+    "transfer": "Transfer",
+    "duration": "Duration",
+    "retransmits": "Retransmits",
+    "realtime_chart": "Real-time Bandwidth"
+  },
+  "ping": {
+    "title": "Ping Test",
+    "subtitle": "Measure latency to a target host",
+    "target": "Target Host",
+    "placeholder": "e.g. 192.168.1.1 or google.com",
+    "ping": "Ping",
+    "pinging": "Pinging...",
+    "statistics": "Statistics",
+    "sent": "Sent",
+    "received": "Received",
+    "loss": "Loss",
+    "latency": "Latency",
+    "min": "Min",
+    "avg": "Avg",
+    "max": "Max",
+    "details": "Details"
+  },
+  "donate": {
+    "title": "Buy me a coffee ☕",
+    "text": "If this project helps you, consider supporting it",
+    "wechat": "WeChat Pay",
+    "alipay": "Alipay"
+  },
+  "common": {
+    "error_prefix": "Failed to"
+  },
+  "error": {
+    "fetch_servers": "Failed to fetch server list",
+    "speedtest": "Speed test failed",
+    "ping": "Ping failed"
+  }
+}

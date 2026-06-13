@@ -1,16 +1,23 @@
 <script setup>
 import { useRouter, useRoute } from 'vue-router'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { setLanguage } from '../i18n'
 
+const { t, locale } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const showDonate = ref(false)
 
 const links = [
-  { path: '/', label: 'Dashboard', icon: '📊' },
-  { path: '/speedtest', label: 'Speed Test', icon: '⚡' },
-  { path: '/ping', label: 'Ping', icon: '📡' }
+  { path: '/', label: () => t('nav.dashboard'), icon: '📊' },
+  { path: '/speedtest', label: () => t('nav.speedtest'), icon: '⚡' },
+  { path: '/ping', label: () => t('nav.ping'), icon: '📡' }
 ]
+
+function switchLang(lang) {
+  setLanguage(lang)
+}
 </script>
 
 <template>
@@ -28,26 +35,36 @@ const links = [
         :class="{ active: route.path === link.path }"
       >
         <span class="nav-icon">{{ link.icon }}</span>
-        <span>{{ link.label }}</span>
+        <span>{{ link.label() }}</span>
       </router-link>
+      <div class="lang-switcher">
+        <button
+          :class="['lang-btn', { active: locale === 'zh' }]"
+          @click="switchLang('zh')"
+        >中文</button>
+        <button
+          :class="['lang-btn', { active: locale === 'en' }]"
+          @click="switchLang('en')"
+        >EN</button>
+      </div>
       <a href="javascript:void(0)" class="nav-link sponsor-link" @click="showDonate = !showDonate">
         <span>☕</span>
-        <span>{{ showDonate ? '关闭' : '打赏' }}</span>
+        <span>{{ showDonate ? t('nav.close') : t('nav.donate') }}</span>
       </a>
     </div>
   </nav>
   <div v-if="showDonate" class="donate-overlay" @click="showDonate = false">
     <div class="donate-modal" @click.stop>
-      <h3>请我喝杯咖啡 ☕</h3>
-      <p>如果这个项目对你有帮助，欢迎打赏支持</p>
+      <h3>{{ t('donate.title') }}</h3>
+      <p>{{ t('donate.text') }}</p>
       <div class="qr-grid">
         <div class="qr-item">
-          <img src="/assets/微信.png" alt="微信支付" />
-          <span>微信</span>
+          <img src="/assets/微信.png" alt="WeChat" />
+          <span>{{ t('donate.wechat') }}</span>
         </div>
         <div class="qr-item">
-          <img src="/assets/支付宝.jpg" alt="支付宝" />
-          <span>支付宝</span>
+          <img src="/assets/支付宝.jpg" alt="Alipay" />
+          <span>{{ t('donate.alipay') }}</span>
         </div>
       </div>
     </div>
@@ -79,6 +96,7 @@ const links = [
 
 .nav-links {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
 }
 
@@ -109,6 +127,33 @@ const links = [
 
 .sponsor-link {
   color: var(--accent) !important;
+}
+
+.lang-switcher {
+  display: flex;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lang-btn:hover {
+  background: var(--bg-secondary);
+}
+
+.lang-btn.active {
+  background: var(--accent);
+  color: #0f172a;
 }
 
 .donate-overlay {

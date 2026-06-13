@@ -1,0 +1,72 @@
+{
+  "nav": {
+    "dashboard": "仪表盘",
+    "speedtest": "测速",
+    "ping": "Ping",
+    "donate": "打赏",
+    "close": "关闭"
+  },
+  "home": {
+    "title": "LAN Speed Test",
+    "subtitle": "内网吞吐量测量工具",
+    "start_speedtest": "开始测速",
+    "start_ping": "Ping 测试",
+    "quick_start": "快速开始",
+    "quick_start_step1": "从列表中选择一个 iperf3 服务器",
+    "quick_start_step2": "选择下载或上传测试",
+    "quick_start_step3": "等待测试完成",
+    "quick_start_step4": "查看实时带宽图表",
+    "server_status": "服务器状态",
+    "status": "状态",
+    "online": "在线",
+    "connections": "连接数"
+  },
+  "speedtest": {
+    "title": "带宽测速",
+    "subtitle": "测量浏览器与 iperf3 服务器之间的带宽",
+    "server": "服务器",
+    "select_server": "选择一个服务器...",
+    "direction": "方向",
+    "download": "下载",
+    "upload": "上传",
+    "start": "开始测试",
+    "testing": "测试中...",
+    "results": "测试结果",
+    "bandwidth": "带宽",
+    "transfer": "传输量",
+    "duration": "时长",
+    "retransmits": "重传数",
+    "realtime_chart": "实时带宽"
+  },
+  "ping": {
+    "title": "Ping 测试",
+    "subtitle": "测量到目标主机的延迟",
+    "target": "目标主机",
+    "placeholder": "例如 192.168.1.1 或 google.com",
+    "ping": "Ping",
+    "pinging": "Ping 中...",
+    "statistics": "统计",
+    "sent": "发送",
+    "received": "接收",
+    "loss": "丢包率",
+    "latency": "延迟",
+    "min": "最小值",
+    "avg": "平均值",
+    "max": "最大值",
+    "details": "详情"
+  },
+  "donate": {
+    "title": "请我喝杯咖啡 ☕",
+    "text": "如果这个项目对你有帮助，欢迎打赏支持",
+    "wechat": "微信支付",
+    "alipay": "支付宝"
+  },
+  "common": {
+    "error_prefix": "失败"
+  },
+  "error": {
+    "fetch_servers": "获取服务器列表失败",
+    "speedtest": "测速失败",
+    "ping": "Ping 失败"
+  }
+}

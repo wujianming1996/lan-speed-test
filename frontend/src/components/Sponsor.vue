@@ -1,24 +1,26 @@
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const showDonate = ref(false)
 </script>
 
 <template>
   <div class="sponsor">
     <a href="javascript:void(0)" @click="showDonate = !showDonate" class="sponsor-link">
-      请我喝杯咖啡 ☕
+      {{ t('donate.title') }}
     </a>
     <div v-if="showDonate" class="donate-qr">
-      <p>如果这个项目对你有帮助，欢迎打赏支持</p>
+      <p>{{ t('donate.text') }}</p>
       <div class="qr-grid">
         <div class="qr-item">
-          <img src="/assets/微信.png" alt="微信支付" />
-          <span>微信</span>
+          <img src="/assets/微信.png" alt="WeChat" />
+          <span>{{ t('donate.wechat') }}</span>
         </div>
         <div class="qr-item">
-          <img src="/assets/支付宝.jpg" alt="支付宝" />
-          <span>支付宝</span>
+          <img src="/assets/支付宝.jpg" alt="Alipay" />
+          <span>{{ t('donate.alipay') }}</span>
         </div>
       </div>
     </div>
@@ -77,6 +79,7 @@ const showDonate = ref(false)
 }
 
 .qr-item span {
+  display: block;
   color: var(--text-secondary);
   font-size: 0.85rem;
 }

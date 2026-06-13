@@ -1,7 +1,9 @@
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSpeedTestStore } from '../stores/speedtest'
 
+const { t } = useI18n()
 const store = useSpeedTestStore()
 const targetHost = ref('')
 
@@ -13,16 +15,16 @@ async function runPing() {
 
 <template>
   <div class="ping-test">
-    <h2>Ping Test</h2>
-    <p class="subtitle">Measure latency to a target host</p>
+    <h2>{{ t('ping.title') }}</h2>
+    <p class="subtitle">{{ t('ping.subtitle') }}</p>
 
     <div class="card">
       <div class="ping-controls">
         <div class="input-group">
-          <label>Target Host</label>
+          <label>{{ t('ping.target') }}</label>
           <input
             v-model="targetHost"
-            placeholder="e.g. 192.168.1.1 or google.com"
+            :placeholder="t('ping.placeholder')"
             @keyup.enter="runPing"
           />
         </div>
@@ -31,7 +33,7 @@ async function runPing() {
           :disabled="!targetHost || store.status === 'running'"
           @click="runPing"
         >
-          {{ store.status === 'running' ? '⏳ Pinging...' : '📡 Ping' }}
+          {{ store.status === 'running' ? '⏳ ' + t('ping.pinging') : '📡 ' + t('ping.ping') }}
         </button>
       </div>
     </div>
@@ -42,18 +44,18 @@ async function runPing() {
 
     <div v-if="store.results" class="grid-2">
       <div class="card">
-        <h3>Statistics</h3>
+        <h3>{{ t('ping.statistics') }}</h3>
         <div class="stats">
           <div class="stat">
-            <span class="stat-label">Sent</span>
+            <span class="stat-label">{{ t('ping.sent') }}</span>
             <span class="stat-value">{{ store.results.transmitted }}</span>
           </div>
           <div class="stat">
-            <span class="stat-label">Received</span>
+            <span class="stat-label">{{ t('ping.received') }}</span>
             <span class="stat-value">{{ store.results.received }}</span>
           </div>
           <div class="stat">
-            <span class="stat-label">Loss</span>
+            <span class="stat-label">{{ t('ping.loss') }}</span>
             <span class="stat-value" :class="{ 'text-danger': store.results.loss > 0 }">
               {{ store.results.loss }}%
             </span>
@@ -61,18 +63,18 @@ async function runPing() {
         </div>
       </div>
       <div class="card">
-        <h3>Latency</h3>
+        <h3>{{ t('ping.latency') }}</h3>
         <div class="stats">
           <div class="stat">
-            <span class="stat-label">Min</span>
+            <span class="stat-label">{{ t('ping.min') }}</span>
             <span class="stat-value">{{ store.results.rtt_min }}</span>
           </div>
           <div class="stat">
-            <span class="stat-label">Avg</span>
+            <span class="stat-label">{{ t('ping.avg') }}</span>
             <span class="stat-value highlight">{{ store.results.rtt_avg }}</span>
           </div>
           <div class="stat">
-            <span class="stat-label">Max</span>
+            <span class="stat-label">{{ t('ping.max') }}</span>
             <span class="stat-value">{{ store.results.rtt_max }}</span>
           </div>
         </div>
@@ -80,7 +82,7 @@ async function runPing() {
     </div>
 
     <div v-if="store.results?.packets" class="card">
-      <h3>Details</h3>
+      <h3>{{ t('ping.details') }}</h3>
       <div v-for="(pkt, i) in store.results.packets" :key="i" class="packet-line">
         <span>seq={{ pkt.seq }}</span>
         <span :style="{ color: pkt.time ? 'var(--text-primary)' : 'var(--danger)' }">

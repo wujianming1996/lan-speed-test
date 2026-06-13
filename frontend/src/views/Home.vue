@@ -1,9 +1,11 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import Sponsor from '../components/Sponsor.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const serverInfo = ref(null)
 const stats = ref({
@@ -26,40 +28,40 @@ onMounted(async () => {
 <template>
   <div class="home">
     <div class="hero">
-      <h1>LAN Speed Test</h1>
-      <p>Internal network throughput measurement tool</p>
+      <h1>{{ t('home.title') }}</h1>
+      <p>{{ t('home.subtitle') }}</p>
       <div class="hero-actions">
         <button class="btn btn-primary" @click="router.push('/speedtest')">
-          ⚡ Start Speed Test
+          ⚡ {{ t('home.start_speedtest') }}
         </button>
         <button class="btn btn-primary" @click="router.push('/ping')">
-          📡 Ping Test
+          📡 {{ t('home.start_ping') }}
         </button>
       </div>
     </div>
 
     <div class="grid-2">
       <div class="card">
-        <h3>Quick Start</h3>
+        <h3>{{ t('home.quick_start') }}</h3>
         <ol class="steps">
-          <li>Select an iperf3 server from the list</li>
-          <li>Choose download or upload test</li>
-          <li>Wait for the test to complete</li>
-          <li>View real-time bandwidth chart</li>
+          <li>{{ t('home.quick_start_step1') }}</li>
+          <li>{{ t('home.quick_start_step2') }}</li>
+          <li>{{ t('home.quick_start_step3') }}</li>
+          <li>{{ t('home.quick_start_step4') }}</li>
         </ol>
       </div>
 
       <div class="card">
-        <h3>Server Status</h3>
+        <h3>{{ t('home.server_status') }}</h3>
         <div class="info-grid">
           <div class="info-item">
-            <span class="info-label">Status</span>
+            <span class="info-label">{{ t('home.status') }}</span>
             <span class="info-value">
-              <span class="status-badge ready">● Online</span>
+              <span class="status-badge ready">● {{ t('home.online') }}</span>
             </span>
           </div>
           <div class="info-item">
-            <span class="info-label">Connections</span>
+            <span class="info-label">{{ t('home.connections') }}</span>
             <span class="info-value">{{ stats.connections || 0 }}</span>
           </div>
         </div>

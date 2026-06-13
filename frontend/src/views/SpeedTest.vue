@@ -1,8 +1,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSpeedTestStore } from '../stores/speedtest'
 import SpeedChart from '../components/SpeedChart.vue'
 
+const { t } = useI18n()
 const store = useSpeedTestStore()
 const selectedServer = ref('')
 const direction = ref('download')
@@ -23,15 +25,15 @@ async function runTest() {
 
 <template>
   <div class="speedtest">
-    <h2>Speed Test</h2>
-    <p class="subtitle">Measure bandwidth between your browser and iperf3 server</p>
+    <h2>{{ t('speedtest.title') }}</h2>
+    <p class="subtitle">{{ t('speedtest.subtitle') }}</p>
 
     <div class="card">
       <div class="test-controls">
         <div class="control-group">
-          <label>Server</label>
+          <label>{{ t('speedtest.server') }}</label>
           <select v-model="selectedServer">
-            <option value="">Select a server...</option>
+            <option value="">{{ t('speedtest.select_server') }}</option>
             <option v-for="s in store.servers" :key="s.id" :value="s.id">
               {{ s.host }}:{{ s.port }}
             </option>
@@ -39,19 +41,19 @@ async function runTest() {
         </div>
 
         <div class="control-group">
-          <label>Direction</label>
+          <label>{{ t('speedtest.direction') }}</label>
           <div class="direction-toggle">
             <button
               :class="['btn', direction === 'download' ? 'btn-primary' : '']"
               @click="direction = 'download'"
             >
-              ⬇ Download
+              ⬇ {{ t('speedtest.download') }}
             </button>
             <button
               :class="['btn', direction === 'upload' ? 'btn-primary' : '']"
               @click="direction = 'upload'"
             >
-              ⬆ Upload
+              ⬆ {{ t('speedtest.upload') }}
             </button>
           </div>
         </div>
@@ -62,7 +64,7 @@ async function runTest() {
             :disabled="!canStart"
             @click="runTest"
           >
-            {{ store.status === 'running' ? '⏳ Testing...' : '🚀 Start Test' }}
+            {{ store.status === 'running' ? '⏳ ' + t('speedtest.testing') : '🚀 ' + t('speedtest.start') }}
           </button>
         </div>
       </div>
@@ -73,29 +75,29 @@ async function runTest() {
     </div>
 
     <div v-if="store.results" class="card">
-      <h3>Results</h3>
+      <h3>{{ t('speedtest.results') }}</h3>
       <div class="results-grid">
         <div class="result-item">
-          <span class="result-label">Bandwidth</span>
+          <span class="result-label">{{ t('speedtest.bandwidth') }}</span>
           <span class="result-value highlight">{{ store.results.bandwidth }}</span>
         </div>
         <div class="result-item">
-          <span class="result-label">Transfer</span>
+          <span class="result-label">{{ t('speedtest.transfer') }}</span>
           <span class="result-value">{{ store.results.transfer }}</span>
         </div>
         <div class="result-item">
-          <span class="result-label">Duration</span>
+          <span class="result-label">{{ t('speedtest.duration') }}</span>
           <span class="result-value">{{ store.results.duration }}s</span>
         </div>
         <div class="result-item">
-          <span class="result-label">Retransmits</span>
+          <span class="result-label">{{ t('speedtest.retransmits') }}</span>
           <span class="result-value">{{ store.results.retransmits }}</span>
         </div>
       </div>
     </div>
 
     <div v-if="store.results?.intervals" class="card">
-      <h3>Real-time Bandwidth</h3>
+      <h3>{{ t('speedtest.realtime_chart') }}</h3>
       <SpeedChart :data="store.results.intervals" />
     </div>
   </div>

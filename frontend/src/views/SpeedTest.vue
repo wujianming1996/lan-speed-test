@@ -10,15 +10,14 @@ const direction = ref('download')
 
 const canStart = computed(() => store.status === 'ready')
 const isRunning = computed(() => store.status === 'running')
-const liveBandwidth = computed(() => formatBandwidth(store.currentSpeed))
-
-function formatBandwidth(bps) {
-  if (!bps || !isFinite(bps)) return '0 bps'
-  if (bps >= 1e9) return `${(bps / 1e9).toFixed(2)} Gbps`
-  if (bps >= 1e6) return `${(bps / 1e6).toFixed(2)} Mbps`
-  if (bps >= 1e3) return `${(bps / 1e3).toFixed(2)} Kbps`
-  return `${bps.toFixed(2)} bps`
-}
+const liveSpeed = computed(() => {
+  const bps = store.currentSpeed
+  if (!bps || !isFinite(bps) || bps <= 0) return { value: '0.00', unit: 'bps' }
+  if (bps >= 1e9) return { value: (bps / 1e9).toFixed(2), unit: 'Gbps' }
+  if (bps >= 1e6) return { value: (bps / 1e6).toFixed(2), unit: 'Mbps' }
+  if (bps >= 1e3) return { value: (bps / 1e3).toFixed(2), unit: 'Kbps' }
+  return { value: bps.toFixed(2), unit: 'bps' }
+})
 
 function runTest() {
   if (!canStart.value) return
@@ -79,8 +78,8 @@ function cancel() {
         </div>
       </div>
       <div v-if="isRunning" class="live-speed">
-        <span class="speed-value">{{ liveBandwidth }}</span>
-        <span class="speed-label">{{ t('speedtest.current') }}</span>
+        <span class="speed-value">{{ liveSpeed.value }}</span>
+        <span class="speed-unit">{{ liveSpeed.unit }}</span>
       </div>
     </div>
 
@@ -154,16 +153,17 @@ function cancel() {
 }
 
 .speed-value {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 
-.speed-label {
+.speed-unit {
+  font-size: 1.2rem;
+  font-weight: 600;
   color: var(--text-secondary);
-  font-size: 0.85rem;
-  text-transform: uppercase;
+  margin-left: 0.25rem;
 }
 
 .results-grid {
@@ -228,7 +228,11 @@ function cancel() {
   }
 
   .speed-value {
-    font-size: 2.5rem;
+    font-size: 3rem;
+  }
+
+  .speed-unit {
+    font-size: 1.4rem;
   }
 
   .results-grid {
